@@ -426,7 +426,7 @@ body.left-column-collapsed .expand-sidebar-btn {
 }
 
 .message-row.user {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .message-row.assistant {
@@ -434,7 +434,8 @@ body.left-column-collapsed .expand-sidebar-btn {
 }
 
 .bubble {
-  max-width: 72%;
+  max-width: 90%;
+  min-width: 0;
   padding: 12px 16px;
   border-radius: 16px;
   font-size: 14px;
@@ -442,17 +443,128 @@ body.left-column-collapsed .expand-sidebar-btn {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.message-row.user .bubble {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: #fff;
-  border-bottom-right-radius: 4px;
+/* 消息内容：优先用满可用宽度，仅在溢出时在单词/字符边界换行，避免过早断行 */
+.bubble .content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
 }
 
-.message-row.assistant .bubble {
-  background: #fff;
+/* 正文底部框（仿 Cursor）：仅对正文区域，自动化执行的指令（如 [执行 Shell]）不算正文 */
+.bubble .content-body {
+  padding-bottom: 12px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.bubble .content-body:last-child {
+  margin-bottom: 0;
+}
+
+/* [执行 Shell] 与命令拆成两个并排气泡，不换行；命令过长显示 ... */
+.shell-bubble-row {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.shell-tag-bubble {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: #eef2ff;
+  color: #4338ca;
+  margin-right: 6px;
+}
+
+.shell-cmd-bubble {
+  flex: 1;
+  min-width: 0;
+  max-width: 95%;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: #f3f4f6;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 用户消息：去掉底框，与模型消息一致只保留标题+内容 */
+.message-row.user .bubble {
+  background: transparent;
   color: #1f2937;
-  border: 1px solid #e5e7eb;
-  border-bottom-left-radius: 4px;
+  border: none;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 4px 0;
+}
+
+.message-row.user .message-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.message-row.user .message-model-title {
+  font-size: 1.25em;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.message-row.user .message-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.message-row.user .content {
+  color: #1f2937;
+}
+
+/* 模型消息：无框，文字直接显示在背景上 */
+.message-row.assistant .bubble {
+  background: transparent;
+  color: #1f2937;
+  border: none;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 4px 0;
+}
+
+/* 模型消息首行：模型名 + 紧贴右侧的小字时间 */
+.message-row.assistant .message-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.message-row.assistant .message-model-title {
+  font-size: 1.25em;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.message-row.assistant .message-time {
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 /* 圆润对话输入区：悬浮在对话栏上，无独立灰底区域 */

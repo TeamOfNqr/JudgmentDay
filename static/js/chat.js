@@ -138,15 +138,101 @@
     sendStopBtn.setAttribute("data-request-id", requestId);
   }
 
+  function formatMessageTime(d) {
+    var y = d.getFullYear(), m = (d.getMonth() + 1), day = d.getDate();
+    var h = d.getHours(), min = d.getMinutes();
+    m = m < 10 ? "0" + m : m;
+    day = day < 10 ? "0" + day : day;
+    h = h < 10 ? "0" + h : h;
+    min = min < 10 ? "0" + min : min;
+    return y + "-" + m + "-" + day + " " + h + ":" + min;
+  }
+
+  /** 将内容中的 "[执行 Shell] 命令" 行渲染为两个并排气泡（标签气泡 + 命令气泡，过长用 ...）；正文用 .content-body 包裹并加底框，自动化指令不算正文 */
+  function renderContentWithShellBubbles(container, content) {
+    if (!container || content == null) return;
+    var prefix = "[执行 Shell] ";
+    container.textContent = "";
+    var lines = (content === "" ? [] : content.split("\n"));
+    var currentBody = null;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line.indexOf(prefix) === 0) {
+        if (currentBody) {
+          container.appendChild(currentBody);
+          currentBody = null;
+        }
+        var cmd = line.slice(prefix.length);
+        var row = document.createElement("span");
+        row.className = "shell-bubble-row";
+        var tagBubble = document.createElement("span");
+        tagBubble.className = "shell-tag-bubble";
+        tagBubble.textContent = "[执行 Shell]";
+        var cmdBubble = document.createElement("span");
+        cmdBubble.className = "shell-cmd-bubble";
+        cmdBubble.textContent = cmd;
+        cmdBubble.title = cmd;
+        row.appendChild(tagBubble);
+        row.appendChild(cmdBubble);
+        container.appendChild(row);
+      } else {
+        if (!currentBody) {
+          currentBody = document.createElement("div");
+          currentBody.className = "content-body";
+        }
+        currentBody.appendChild(document.createTextNode(line));
+        if (i < lines.length - 1) currentBody.appendChild(document.createTextNode("\n"));
+      }
+    }
+    if (currentBody) container.appendChild(currentBody);
+  }
+
   function appendMessage(role, content) {
     if (welcomeBlock) welcomeBlock.style.display = "none";
     var row = document.createElement("div");
     row.className = "message-row " + role;
     var bubble = document.createElement("div");
     bubble.className = "bubble";
+    if (role === "assistant") {
+      var header = document.createElement("div");
+      header.className = "message-header";
+      var title = document.createElement("span");
+      title.className = "message-model-title";
+      title.textContent = "JudgmentDay";
+      var timeSpan = document.createElement("span");
+      timeSpan.className = "message-time";
+      timeSpan.textContent = formatMessageTime(new Date());
+      header.appendChild(title);
+      header.appendChild(timeSpan);
+      bubble.appendChild(header);
+    }
+    if (role === "user") {
+      var header = document.createElement("div");
+      header.className = "message-header";
+      var title = document.createElement("span");
+      title.className = "message-model-title";
+      var usernameEl = document.getElementById("current-username");
+      title.textContent = (usernameEl && usernameEl.value) ? usernameEl.value : "";
+      var timeSpan = document.createElement("span");
+      timeSpan.className = "message-time";
+      timeSpan.textContent = formatMessageTime(new Date());
+      header.appendChild(title);
+      header.appendChild(timeSpan);
+      bubble.appendChild(header);
+    }
     var text = document.createElement("div");
     text.className = "content";
-    text.textContent = content;
+    text.style.whiteSpace = "pre-wrap";
+    text.style.wordBreak = "break-word";
+    text.style.overflowWrap = "break-word";
+    if (role === "assistant") {
+      renderContentWithShellBubbles(text, content);
+    } else {
+      var bodyWrap = document.createElement("div");
+      bodyWrap.className = "content-body";
+      bodyWrap.textContent = content;
+      text.appendChild(bodyWrap);
+    }
     bubble.appendChild(text);
     row.appendChild(bubble);
     chatMessages.appendChild(row);
@@ -184,6 +270,7 @@
 
       var requestId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : ("r" + Date.now());
       var assistantNode = appendMessage("assistant", "");
+      var streamedContent = "";
       setButtonStop(requestId);
 
       var fd = new FormData(chatForm);
@@ -203,16 +290,41 @@
           buffer += decoder.decode(result.value, { stream: true });
           var parts = buffer.split("\n\n");
           buffer = parts.pop() || "";
+          // #region agent log
+          try {
+            fetch("http://localhost:1863/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "259787" }, body: JSON.stringify({ sessionId: "259787", hypothesisId: "E", location: "chat.js:stream_read", message: "buffer_after_split", data: { partsCount: parts.length, bufferRemainLen: buffer.length }, timestamp: Date.now() }) }).catch(function () {});
+          } catch (_e) {}
+          // #endregion
           for (var i = 0; i < parts.length; i++) {
             var part = parts[i];
             if (part.indexOf("data:") !== 0) continue;
-            var text = part.slice(5).trim();
+            var raw = part.slice(5).trim();
+            var text = "";
+            var parseOk = false;
+            try {
+              text = JSON.parse(raw);
+              parseOk = true;
+            } catch (e) {
+              text = raw;
+            }
+            if (typeof text !== "string") text = String(text);
+            // #region agent log
+            try {
+              var _preview = (raw.substring && raw.substring(0, 120)) || String(raw).slice(0, 120);
+              var _textPreview = (text.substring && text.substring(0, 100)) || String(text).slice(0, 100);
+              fetch("http://localhost:1863/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "259787" }, body: JSON.stringify({ sessionId: "259787", hypothesisId: "B", location: "chat.js:sse_parse", message: "sse_event", data: { rawLen: raw.length, rawPreview: _preview, parseOk: parseOk, usedRaw: !parseOk, textPreview: _textPreview, textLen: text.length }, timestamp: Date.now() }) }).catch(function () {});
+            } catch (_e) {}
+            // #endregion
             if (text === "[DONE]") break;
             if (text.indexOf("[CONV_ID]") === 0) {
               newConversationId = text.slice(9);
+              var convInput = document.getElementById("conversation-id-input");
+              if (convInput) convInput.value = newConversationId;
               continue;
             }
-            assistantNode.textContent += text;
+            text = text.replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+            streamedContent += text;
+            renderContentWithShellBubbles(assistantNode, streamedContent);
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
         }
@@ -224,6 +336,24 @@
         console.error("流式请求失败", err);
       } finally {
         setButtonSend();
+      }
+    });
+  }
+
+  // Ctrl+Enter 发送（Mac 下 Cmd+Enter）
+  if (chatInput && chatForm && sendStopBtn) {
+    chatInput.addEventListener("keydown", function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        var canSend = sendStopBtn.type === "submit" && chatInput.value.trim();
+        if (canSend) {
+          // 延迟到下一帧触发表单提交，避免在 keydown 内同步 submit 被部分浏览器忽略
+          setTimeout(function () {
+            if (sendStopBtn.type === "submit" && chatInput.value.trim()) {
+              sendStopBtn.click();
+            }
+          }, 0);
+        }
       }
     });
   }
@@ -290,4 +420,10 @@
   }
 
   if (chatViewPage && chatViewPage.classList.contains("active")) loadSettings();
+
+  // 页面加载时，将已有 assistant 消息中的 [执行 Shell] 行渲染为双气泡
+  document.querySelectorAll(".message-row.assistant .content").forEach(function (el) {
+    var raw = el.textContent || "";
+    if (raw) renderContentWithShellBubbles(el, raw);
+  });
 })();

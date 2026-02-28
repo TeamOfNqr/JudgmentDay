@@ -50,7 +50,6 @@
                   <select id="model-select" aria-label="当前模型">
                     <option value="qwen3-max">Qwen3-Max 默认</option>
                   </select>
-                  <span class="model-bar-brand">JudgmentDay</span>
                   <button type="button" id="expand-sidebar-btn" class="expand-sidebar-btn" aria-label="展开侧栏">返回</button>
                 </div>
                 <div class="chat-messages" id="chat-messages">
@@ -61,14 +60,27 @@
                   {% for m in messages %}
                   <div class="message-row {{ 'user' if m.role == 'user' else 'assistant' }}">
                     <div class="bubble">
-                      <div class="content">{{ m.content }}</div>
+                      {% if m.role == 'assistant' %}
+                      <div class="message-header">
+                        <span class="message-model-title">JudgmentDay</span>
+                        <span class="message-time">{{ m.created_at.strftime('%Y-%m-%d %H:%M') if m.created_at else '' }}</span>
+                      </div>
+                      {% endif %}
+                      {% if m.role == 'user' %}
+                      <div class="message-header">
+                        <span class="message-model-title">{{ current_username|default('', true) }}</span>
+                        <span class="message-time">{{ m.created_at.strftime('%Y-%m-%d %H:%M') if m.created_at else '' }}</span>
+                      </div>
+                      {% endif %}
+                      <div class="content"><div class="content-body">{{ m.content }}</div></div>
                     </div>
                   </div>
                   {% endfor %}
                 </div>
                 <div class="chat-input-wrap">
                   <form id="chat-form" class="chat-input-box">
-                    <input type="hidden" name="conversation_id" value="{{ conversation.id if conversation else '' }}" />
+                    <input type="hidden" id="conversation-id-input" name="conversation_id" value="{{ conversation.id if conversation else '' }}" />
+                    <input type="hidden" id="current-username" value="{{ current_username|default('', true) }}" />
                     <div class="chat-input-row">
                       <textarea id="chat-input" placeholder="向 JudgmentDay 提问…" rows="1"></textarea>
                       <div class="chat-actions">

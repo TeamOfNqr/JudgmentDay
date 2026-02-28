@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import queue
 import threading
 import uuid
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -33,6 +35,7 @@ async def chat_page(request: Request):
                 "conversation": None,
                 "messages": [],
                 "conversations": conversations,
+                "current_username": user.username,
             },
         )
     conv_id = request.query_params.get("conversation_id")
@@ -51,6 +54,7 @@ async def chat_page(request: Request):
             "conversation": conversation,
             "messages": history,
             "conversations": conversations,
+            "current_username": user.username,
         },
     )
 
@@ -82,15 +86,17 @@ async def api_chat_stream(
         chunk_queue: queue.Queue = queue.Queue()
 
         def run_sync_stream():
-            for chunk in chat_service.stream_model_reply(
-                user=user,
-                conversation=conversation,
-                user_content=content,
-                files=file_list,
-                request_id=request_id,
-            ):
-                chunk_queue.put(chunk)
-            chunk_queue.put(None)
+            try:
+                for chunk in chat_service.stream_model_reply(
+                    user=user,
+                    conversation=conversation,
+                    user_content=content,
+                    files=file_list,
+                    request_id=request_id,
+                ):
+                    chunk_queue.put(chunk)
+            finally:
+                chunk_queue.put(None)
 
         threading.Thread(target=run_sync_stream, daemon=True).start()
         loop = asyncio.get_event_loop()
@@ -98,10 +104,28 @@ async def api_chat_stream(
             chunk = await loop.run_in_executor(None, chunk_queue.get)
             if chunk is None:
                 break
-            yield f"data: {chunk}\n\n"
+            # #region agent log
+            try:
+                _log_path = Path(PROJECT_ROOT) / ".cursor" / "debug-259787.log"
+                _payload = {"sessionId": "259787", "hypothesisId": "A", "location": "chat_routes.py:event_stream", "message": "sse_chunk_before_yield", "data": {"chunk_preview": repr(chunk)[:200], "chunk_has_newline": "\n" in chunk, "chunk_len": len(chunk)}, "timestamp": __import__("time").time() * 1000}
+                with _log_path.open("a") as _f:
+                    _f.write(json.dumps(_payload, ensure_ascii=False) + "\n")
+            except Exception:
+                pass
+            # #endregion
+            # 用 JSON 编码 payload，避免 chunk 内换行或 "data:" 被误解析并显示到界面
+            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.post("/api/chat/interrupt")

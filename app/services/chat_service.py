@@ -118,7 +118,7 @@ def stream_model_reply(
 
     full_reply: List[str] = []
     try:
-        for chunk in dashscope_client.stream_chat(
+        for chunk in dashscope_client.stream_chat_with_tools(
             history=history,
             user_message=user_msg,
             api_key_override=_get_user_api_key(user),

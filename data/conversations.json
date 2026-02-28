@@ -1,3 +1,12 @@
 {
-  "conversations": []
+  "conversations": [
+    {
+      "id": "265517c2-0ec3-4e44-b776-38049e4bd28f",
+      "user_id": "6cf10d52-c1d3-4e7e-8127-e0c514c9ed56",
+      "title": "默认会话",
+      "created_at": "2026-02-28T18:07:49.451294",
+      "updated_at": "2026-02-28T18:07:49.451300",
+      "message_ids": []
+    }
+  ]
 }

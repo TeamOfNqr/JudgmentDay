@@ -28,6 +28,9 @@ class ChatMessage(BaseModel):
     content: str
     files: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # UTCP 工具调用：assistant 消息可带 tool_calls，tool 消息带 tool_call_id
+    tool_calls: Optional[List[dict]] = None
+    tool_call_id: Optional[str] = None
 
 
 class Conversation(BaseModel):
