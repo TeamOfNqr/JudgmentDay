@@ -1,0 +1,677 @@
+/* JudgmentDay 对话页 - 现代浅色布局，参考千问风格 */
+
+* {
+  box-sizing: border-box;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f7f8fa;
+  color: #1f2937;
+}
+
+body.drag-over::after {
+  content: "释放以上传文件";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79, 70, 229, 0.08);
+  border: 3px dashed #4f46e5;
+  border-radius: 12px;
+  margin: 12px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #4338ca;
+  pointer-events: none;
+}
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- 左上+左下：左侧一列（顶部 logo+设置，下方侧栏） ---------- */
+.left-column {
+  flex-shrink: 0;
+  width: 260px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.left-column.collapsed {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-right: none;
+}
+
+.top-bar {
+  flex-shrink: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px 0 14px;
+  gap: 10px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #1f2937;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.logout-btn:hover {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* ---------- 主体：左列 + 右侧大对话栏 ---------- */
+.main-wrap {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* 左侧对话历史栏（在 left-column 内，占满剩余高度） */
+.sidebar {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-inner {
+  width: 260px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+}
+
+.new-chat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.new-chat-btn:hover {
+  background: #e5e7eb;
+}
+
+.new-chat-btn:active {
+  transform: scale(0.98);
+}
+
+.new-chat-btn .icon-plus {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.sidebar-section-title {
+  padding: 8px 16px 6px;
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+
+.conversation-item-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 10px;
+  margin-bottom: 2px;
+}
+
+.conversation-item-wrap:hover {
+  background: #f3f4f6;
+}
+
+.conversation-item-wrap.active {
+  background: #eef2ff;
+}
+
+.conversation-item-wrap.active .conversation-item {
+  color: #4338ca;
+}
+
+.conversation-item {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.conversation-item:hover {
+  background: transparent;
+}
+
+.conversation-item-wrap:hover .conversation-item {
+  background: transparent;
+}
+
+.conversation-delete-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.conversation-delete-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* 收缩按钮（贴在左列右缘，与「新对话」按钮同高） */
+.sidebar-toggle {
+  position: absolute;
+  left: 100%;
+  top: 88px; /* 顶栏 56 + 侧栏上内边距 12 + 新对话按钮约一半高度 */
+  transform: translateY(-50%);
+  width: 20px;
+  height: 40px;
+  margin-left: -1px;
+  border: 1px solid #e5e7eb;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.sidebar-toggle:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.sidebar-toggle .arrow {
+  transition: transform 0.2s;
+}
+
+.left-column.collapsed .sidebar-toggle .arrow {
+  transform: rotate(180deg);
+}
+
+.left-column.collapsed .sidebar-toggle {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 模型栏「返回」按钮：收缩后渐显，点击展开后渐隐 */
+.expand-sidebar-btn {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  margin: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease;
+}
+
+body.left-column-collapsed .expand-sidebar-btn {
+  opacity: 1;
+  max-width: 80px;
+  margin-left: 0;
+  pointer-events: auto;
+}
+
+.expand-sidebar-btn:hover {
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+/* 主内容区 */
+.chat-area-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+
+/* 视图切换（对话 / 设置）带过渡 */
+.view-container {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.view-page {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.view-page.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* 对话页：模型选择悬浮 + 消息区 + 输入区 */
+.chat-view .model-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px 12px;
+  background: transparent;
+}
+
+.model-bar select,
+.model-bar .model-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.model-bar select {
+  padding: 8px 12px 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.model-bar-brand {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 16px;
+}
+
+.message-row {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.message-row.user {
+  justify-content: flex-end;
+}
+
+.message-row.assistant {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 72%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.message-row.user .bubble {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message-row.assistant .bubble {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 4px;
+}
+
+/* 圆润对话输入区：悬浮在对话栏上，无独立灰底区域 */
+.chat-input-wrap {
+  flex-shrink: 0;
+  padding: 16px 24px 24px;
+  background: transparent;
+}
+
+.chat-input-box {
+  max-width: 720px;
+  margin: 0 auto;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px 10px 16px;
+}
+
+#chat-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.send-btn {
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  background: #4f46e5;
+  color: #fff;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.send-btn.stop-mode {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.send-btn.stop-mode:hover {
+  background: #fecaca;
+}
+
+.send-btn.stop-mode:disabled {
+  opacity: 0.8;
+}
+
+/* 输入栏下方预留扩展区（在线搜索等，暂不展示按钮） */
+.chat-input-extra {
+  min-height: 0;
+  padding: 4px 12px 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.upload-list {
+  padding: 4px 16px 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ---------- 设置页 ---------- */
+.settings-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.settings-view h2 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.settings-panel .field {
+  margin-bottom: 20px;
+}
+
+.settings-panel label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.password-row input {
+  flex: 1;
+  max-width: 360px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.password-row input:focus {
+  border-color: #4f46e5;
+}
+
+.ghost-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ghost-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.settings-panel .hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.primary-btn {
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.primary-btn:hover {
+  background: #4338ca;
+}
+
+.status-text {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.settings-logout-wrap {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.logout-btn-settings {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.logout-btn-settings:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+/* 欢迎语（无消息时） */
+.welcome-block {
+  text-align: center;
+  padding: 48px 24px;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.welcome-block h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+}

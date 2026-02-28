@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/images/logo.jpg" type="image/jpeg" />
+    <title>JudgmentDay 对话</title>
+    <link rel="stylesheet" href="/static/css/chat.css" />
+  </head>
+  <body>
+    <div class="app-root">
+      <div class="main-wrap">
+        <div id="left-column" class="left-column">
+          <header class="top-bar">
+            <div class="top-bar-left">
+              <a href="/chat" class="logo-wrap">
+                <img src="/images/logo.jpg" alt="JudgmentDay" class="logo-img" />
+                <span class="logo-text">JudgmentDay</span>
+              </a>
+              <button type="button" id="nav-toggle-btn" class="settings-btn">设置</button>
+            </div>
+          </header>
+          <aside id="sidebar" class="sidebar">
+            <div class="sidebar-inner">
+              <button type="button" id="new-chat-btn" class="new-chat-btn">
+                <span class="icon-plus">+</span>
+                <span>新对话</span>
+              </button>
+              <div class="sidebar-section-title">最近对话</div>
+              <nav class="conversation-list">
+                {% for c in conversations %}
+                <div class="conversation-item-wrap {% if conversation and c.id == conversation.id %}active{% endif %}" data-conversation-id="{{ c.id }}">
+                  <button type="button" class="conversation-item">{{ c.title }}</button>
+                  <button type="button" class="conversation-delete-btn" title="删除" aria-label="删除对话">×</button>
+                </div>
+                {% endfor %}
+              </nav>
+            </div>
+          </aside>
+          <button type="button" id="sidebar-toggle" class="sidebar-toggle" aria-label="收缩侧边栏">
+            <span class="arrow">‹</span>
+          </button>
+        </div>
+
+        <div class="chat-area-wrap">
+          <div class="view-container">
+            <section id="chat-view-page" class="view-page active">
+              <div class="chat-view" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="model-bar">
+                  <select id="model-select" aria-label="当前模型">
+                    <option value="qwen3-max">Qwen3-Max 默认</option>
+                  </select>
+                  <span class="model-bar-brand">JudgmentDay</span>
+                  <button type="button" id="expand-sidebar-btn" class="expand-sidebar-btn" aria-label="展开侧栏">返回</button>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                  <div id="welcome-block" class="welcome-block" {% if messages %}style="display: none;"{% endif %}>
+                    <h3>你好，我是 JudgmentDay</h3>
+                    <p>网络安全助手，可在此提问或执行操作。请在设置中配置「阿里云百炼平台 API-KEY」后使用。</p>
+                  </div>
+                  {% for m in messages %}
+                  <div class="message-row {{ 'user' if m.role == 'user' else 'assistant' }}">
+                    <div class="bubble">
+                      <div class="content">{{ m.content }}</div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="chat-input-wrap">
+                  <form id="chat-form" class="chat-input-box">
+                    <input type="hidden" name="conversation_id" value="{{ conversation.id if conversation else '' }}" />
+                    <div class="chat-input-row">
+                      <textarea id="chat-input" placeholder="向 JudgmentDay 提问…" rows="1"></textarea>
+                      <div class="chat-actions">
+                        <button type="submit" id="send-stop-btn" class="send-btn">发送</button>
+                      </div>
+                    </div>
+                    <div id="upload-list" class="upload-list"></div>
+                    <!-- 预留：在线搜索等扩展功能入口，后续可在此添加按钮 -->
+                    <div class="chat-input-extra" id="chat-input-extra"></div>
+                  </form>
+                </div>
+              </div>
+            </section>
+
+            <section id="settings-view-page" class="view-page">
+              <div class="settings-view settings-panel">
+                <h2>模型与账号设置</h2>
+                <form id="settings-form">
+                  <div class="field">
+                    <label for="api-key">阿里云百炼平台 API-KEY</label>
+                    <div class="password-row">
+                      <input id="api-key" type="password" autocomplete="off" placeholder="请输入阿里云百炼平台 API-KEY" />
+                      <button type="button" id="toggle-api-key" class="ghost-btn">显示</button>
+                    </div>
+                    <p class="hint">仅保存在本机，不会上传。用于调用千问模型。</p>
+                  </div>
+                  <button type="submit" class="primary-btn">保存设置</button>
+                  <div id="settings-status" class="status-text"></div>
+                </form>
+                <div class="settings-logout-wrap">
+                  <a href="/logout" class="logout-btn-settings">退出登录</a>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/static/js/chat.js"></script>
+  </body>
+</html>

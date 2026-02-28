@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-dotenv
+pydantic
+dashscope
+itsdangerous
+cryptography
+openai

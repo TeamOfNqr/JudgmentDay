@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "id": "6cf10d52-c1d3-4e7e-8127-e0c514c9ed56",
+      "username": "admin",
+      "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "email": null,
+      "api_key": "123"
+    }
+  ]
+}

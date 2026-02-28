@@ -1,0 +1,11 @@
+---
+description: 本项目运行环境为 Conda 的 JudgmentDay 环境
+alwaysApply: true
+---
+
+# 运行环境
+
+本项目使用 **Conda** 环境进行开发与运行，环境名为 **JudgmentDay**。
+
+- 运行、调试或安装依赖时，请先激活该环境：`conda activate JudgmentDay`。
+- 涉及 Python 解释器、包管理或终端命令时，应基于此环境进行配置与执行。

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/images/logo.jpg" type="image/jpeg" />
+    <title>JudgmentDay 登录</title>
+    <link rel="stylesheet" href="/static/css/login.css" />
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="background"></div>
+      <div class="login-container">
+        <div class="left-panel">
+          <div class="logo-wrapper">
+            <img src="/images/logo.jpg" alt="JudgmentDay Logo" class="logo-image" />
+            <div class="logo-text">JudgmentDay</div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <form class="login-form" method="post" action="/login">
+            <h1 class="title">登录 JudgmentDay</h1>
+            <div class="field">
+              <label for="username">用户名</label>
+              <input id="username" name="username" type="text" required />
+            </div>
+            <div class="field">
+              <label for="password">密码</label>
+              <input id="password" name="password" type="password" required />
+            </div>
+            <button type="submit" class="submit-btn">登录</button>
+            <p class="hint">
+              首次启动已自动创建默认管理员账号，用户名和密码见服务端控制台日志。
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
