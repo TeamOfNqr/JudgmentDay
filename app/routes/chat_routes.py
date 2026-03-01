@@ -4,6 +4,7 @@ import asyncio
 import json
 import queue
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import List, Optional
@@ -100,21 +101,25 @@ async def api_chat_stream(
 
         threading.Thread(target=run_sync_stream, daemon=True).start()
         loop = asyncio.get_event_loop()
+        chunk_index = 0
         while True:
             chunk = await loop.run_in_executor(None, chunk_queue.get)
             if chunk is None:
                 break
             # #region agent log
             try:
-                _log_path = Path(PROJECT_ROOT) / ".cursor" / "debug-259787.log"
-                _payload = {"sessionId": "259787", "hypothesisId": "A", "location": "chat_routes.py:event_stream", "message": "sse_chunk_before_yield", "data": {"chunk_preview": repr(chunk)[:200], "chunk_has_newline": "\n" in chunk, "chunk_len": len(chunk)}, "timestamp": __import__("time").time() * 1000}
+                _log_path = Path(PROJECT_ROOT) / ".cursor" / "debug-0f4b4c.log"
+                _payload = {"sessionId": "0f4b4c", "hypothesisId": "H4", "location": "chat_routes:event_stream", "message": "route_yield_sse", "data": {"chunk_index": chunk_index, "chunk_len": len(chunk), "ts": time.time()}, "timestamp": int(time.time() * 1000)}
                 with _log_path.open("a") as _f:
                     _f.write(json.dumps(_payload, ensure_ascii=False) + "\n")
             except Exception:
                 pass
             # #endregion
+            chunk_index += 1
             # 用 JSON 编码 payload，避免 chunk 内换行或 "data:" 被误解析并显示到界面
             yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            # 让出事件循环，促使 ASGI 层立即发送当前 chunk，避免与下一 chunk 合并导致前端一次性收到多段
+            await asyncio.sleep(0)
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(

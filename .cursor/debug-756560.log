@@ -1,0 +1,5 @@
+{"sessionId":"756560","hypothesisId":"H1","location":"chat.js:submit_entry","message":"submit_entry","data":{"contentLen":7,"droppedFilesCount":1},"timestamp":1772334598190}
+{"sessionId":"756560","hypothesisId":"H4","location":"chat.js:before_upload","message":"before_uploadDroppedFiles","data":{"droppedFilesCount":1},"timestamp":1772334598190}
+{"sessionId":"756560","hypothesisId":"H2","location":"chat.js:after_upload","message":"after_uploadDroppedFiles","data":{"filePathsCount":1,"uploadListText":""},"timestamp":1772334614474}
+{"sessionId":"756560","hypothesisId":"H5","location":"chat.js:before_stream","message":"before_stream_fetch","data":{"filePathsCount":1,"uploadListText":""},"timestamp":1772334614475}
+{"sessionId":"756560","hypothesisId":"H5","location":"chat.js:finally","message":"submit_finally","data":{"uploadListText":""},"timestamp":1772334624291}

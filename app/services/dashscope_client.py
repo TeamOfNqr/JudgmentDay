@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from dashscope import Generation
@@ -21,8 +23,10 @@ SHELL_TOOL = {
         "description": (
             "在用户需要执行系统命令、查看或修改文件、安装软件、运行脚本等时，使用本工具执行 Shell 命令。"
             "你拥有完全权限的 Shell，可执行任意命令。工作目录默认为项目根目录。"
+            "选择指令执行时，不要只拘束于低级命令，可以尝试使用高级命令来完成任务。"
             "当系统开启 PROJECT_SAVE 时，禁止对项目本体进行写/删操作（即不可在项目根目录下除 tmp 以外的路径创建、修改或删除文件）；"
             "仅允许在 tmp 目录下自由读写。若需写文件请使用 tmp/ 下的路径。"
+            "如果指令缺失，你可以尝试使用APT包管理器下载相关软件包，并使用相关命令进行安装。"
         ),
         "parameters": {
             "type": "object",
@@ -103,10 +107,13 @@ def stream_chat_with_tools(
     api_key_override: Optional[str],
     request_id: str,
     interrupt_flags: dict,
+    enable_utcp: bool = True,
+    enable_web_search: bool = True,
 ) -> Iterable[str]:
     """
     带 UTCP Shell 工具调用的流式对话：若模型返回 tool_calls 则执行 Shell 并继续对话，
     直到模型返回纯文本；最终将整轮对话（含 tool 消息）持久化并流式返回最后一段文本。
+    enable_utcp=False 时不传 tools，仅文本对话；enable_web_search=False 时不开启联网搜索。
     """
     from app.services import utcp_shell
 
@@ -118,7 +125,15 @@ def stream_chat_with_tools(
     api_messages: List[Dict[str, Any]] = []
     for m in history:
         api_messages.append(_message_to_api(m))
-    api_messages.append({"role": "user", "content": user_message.content})
+    user_content = user_message.content or ""
+    if getattr(user_message, "files", None) and isinstance(user_message.files, list) and user_message.files:
+        file_list = "\n".join("- " + f for f in user_message.files)
+        user_content = (
+            user_content.rstrip()
+            + "\n\n【用户在本条消息中附带了以下文件（路径相对于项目根目录，可直接在 Shell 中使用）：】\n"
+            + file_list
+        )
+    api_messages.append({"role": "user", "content": user_content})
 
     full_reply_chunks: List[str] = []
 
@@ -127,19 +142,33 @@ def stream_chat_with_tools(
             if interrupt_flags.get(request_id):
                 break
 
-            rsp = Generation.call(
-                model=MODEL_NAME,
-                messages=api_messages,
-                api_key=api_key_override,
-                result_format="message",
-                stream=False,
-                tools=[SHELL_TOOL],
-                tool_choice="auto",
-            )
+            call_kwargs: Dict[str, Any] = {
+                "model": MODEL_NAME,
+                "messages": api_messages,
+                "api_key": api_key_override,
+                "result_format": "message",
+                "stream": False,
+            }
+            if enable_utcp:
+                call_kwargs["tools"] = [SHELL_TOOL]
+                call_kwargs["tool_choice"] = "auto"
+            if enable_web_search:
+                call_kwargs["enable_search"] = True
+
+            rsp = Generation.call(**call_kwargs)
 
             text = _extract_text_from_response(rsp)
             if text:
                 full_reply_chunks.append(text)
+                # #region agent log
+                try:
+                    _log = Path(__file__).resolve().parent.parent.parent / ".cursor" / "debug-0f4b4c.log"
+                    with _log.open("a") as _f:
+                        _f.write(json.dumps({"sessionId": "0f4b4c", "hypothesisId": "H1", "location": "dashscope_client:yield_text", "message": "backend_yield", "data": {"kind": "text", "len": len(text), "ts": time.time()}, "timestamp": int(time.time() * 1000)}, ensure_ascii=False) + "\n")
+                except Exception:
+                    pass
+                # #endregion
+                yield text
 
             tool_calls = _get_tool_calls_from_response(rsp)
             if not tool_calls:
@@ -182,18 +211,32 @@ def stream_chat_with_tools(
                     api_messages.append({"role": "tool", "tool_call_id": tid, "content": "[参数解析失败]"})
                     continue
 
+                # #region agent log
+                try:
+                    _log = Path(__file__).resolve().parent.parent.parent / ".cursor" / "debug-0f4b4c.log"
+                    with _log.open("a") as _f:
+                        _f.write(json.dumps({"sessionId": "0f4b4c", "hypothesisId": "H2", "location": "dashscope_client:yield_shell", "message": "backend_yield", "data": {"kind": "shell_cmd", "ts": time.time()}, "timestamp": int(time.time() * 1000)}, ensure_ascii=False) + "\n")
+                except Exception:
+                    pass
+                # #endregion
                 yield f"[执行 Shell] {command}\n\n"
                 ok, out = utcp_shell.execute(command)
                 result = out if ok else f"[失败] {out}"
                 api_messages.append({"role": "tool", "tool_call_id": tid, "content": result})
+                # #region agent log
+                try:
+                    _log = Path(__file__).resolve().parent.parent.parent / ".cursor" / "debug-0f4b4c.log"
+                    with _log.open("a") as _f:
+                        _f.write(json.dumps({"sessionId": "0f4b4c", "hypothesisId": "H3", "location": "dashscope_client:yield_shell_out", "message": "backend_yield", "data": {"kind": "shell_output", "ts": time.time()}, "timestamp": int(time.time() * 1000)}, ensure_ascii=False) + "\n")
+                except Exception:
+                    pass
+                # #endregion
+                yield f"[Shell 输出]\n{result}\n\n"
+                yield "[Shell 输出结束]\n"
 
-        # 流式输出最终回复；若已中断则不再 yield，使生成器尽快退出
+        # 模型文本已在每轮响应时即时 yield，此处无需再输出 full_reply_chunks
         if interrupt_flags.get(request_id):
             return
-        for chunk in full_reply_chunks:
-            if interrupt_flags.get(request_id):
-                return
-            yield chunk
     except Exception as exc:  # noqa: BLE001
         logger.exception("DashScope tool call failed: %s", exc)
         yield "[模型或工具调用异常，请检查日志和配置。]"

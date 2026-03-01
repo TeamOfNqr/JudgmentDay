@@ -1,0 +1,15 @@
+{"sessionId": "0f4b4c", "hypothesisId": "H2", "location": "dashscope_client:yield_shell", "message": "backend_yield", "data": {"kind": "shell_cmd", "ts": 1772334617.1773994}, "timestamp": 1772334617177}
+{"sessionId": "0f4b4c", "hypothesisId": "H4", "location": "chat_routes:event_stream", "message": "route_yield_sse", "data": {"chunk_index": 0, "chunk_len": 98, "ts": 1772334617.1778371}, "timestamp": 1772334617177}
+{"sessionId": "0f4b4c", "hypothesisId": "H3", "location": "dashscope_client:yield_shell_out", "message": "backend_yield", "data": {"kind": "shell_output", "ts": 1772334617.1866004}, "timestamp": 1772334617186}
+{"sessionId": "0f4b4c", "hypothesisId": "H4", "location": "chat_routes:event_stream", "message": "route_yield_sse", "data": {"chunk_index": 1, "chunk_len": 774, "ts": 1772334617.1873958}, "timestamp": 1772334617187}
+{"sessionId": "0f4b4c", "hypothesisId": "H4", "location": "chat_routes:event_stream", "message": "route_yield_sse", "data": {"chunk_index": 2, "chunk_len": 13, "ts": 1772334617.1904817}, "timestamp": 1772334617190}
+{"sessionId":"0f4b4c","hypothesisId":"H5","location":"chat.js:reader_read","message":"read_chunk","data":{"readCount":1,"valueLen":114,"ts":1772334617.736},"timestamp":1772334617736}
+{"sessionId":"0f4b4c","hypothesisId":"H3","location":"chat.js:sse_event","message":"frontend_process_event","data":{"eventIndex":1,"textLen":98,"ts":1772334617.736},"timestamp":1772334617736}
+{"sessionId":"0f4b4c","hypothesisId":"H3","location":"chat.js:sse_event","message":"frontend_process_event","data":{"eventIndex":1,"textLen":774,"ts":1772334617.769},"timestamp":1772334617769}
+{"sessionId":"0f4b4c","hypothesisId":"H5","location":"chat.js:reader_read","message":"read_chunk","data":{"readCount":2,"valueLen":823,"ts":1772334617.768},"timestamp":1772334617768}
+{"sessionId":"0f4b4c","hypothesisId":"H3","location":"chat.js:sse_event","message":"frontend_process_event","data":{"eventIndex":2,"textLen":13,"ts":1772334617.77},"timestamp":1772334617770}
+{"sessionId": "0f4b4c", "hypothesisId": "H1", "location": "dashscope_client:yield_text", "message": "backend_yield", "data": {"kind": "text", "len": 382, "ts": 1772334623.7049134}, "timestamp": 1772334623704}
+{"sessionId": "0f4b4c", "hypothesisId": "H4", "location": "chat_routes:event_stream", "message": "route_yield_sse", "data": {"chunk_index": 3, "chunk_len": 382, "ts": 1772334623.7055566}, "timestamp": 1772334623705}
+{"sessionId":"0f4b4c","hypothesisId":"H5","location":"chat.js:reader_read","message":"read_chunk","data":{"readCount":3,"valueLen":618,"ts":1772334624.265},"timestamp":1772334624265}
+{"sessionId":"0f4b4c","hypothesisId":"H3","location":"chat.js:sse_event","message":"frontend_process_event","data":{"eventIndex":1,"textLen":382,"ts":1772334624.266},"timestamp":1772334624266}
+{"sessionId":"0f4b4c","hypothesisId":"H3","location":"chat.js:sse_event","message":"frontend_process_event","data":{"eventIndex":2,"textLen":6,"ts":1772334624.289},"timestamp":1772334624289}

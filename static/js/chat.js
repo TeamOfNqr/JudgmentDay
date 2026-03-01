@@ -101,9 +101,110 @@
   var welcomeBlock = document.getElementById("welcome-block");
 
   var droppedFiles = [];
+  var uploadInProgress = false;
 
-  function updateDroppedHint() {
-    if (uploadList) uploadList.textContent = droppedFiles.length ? "已添加 " + droppedFiles.length + " 个文件（发送时上传）" : "";
+  var FILE_EXT_CATEGORY = {
+    image: ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "heic", "avif", "tiff", "tif", "raw", "cr2", "nef", "arw"],
+    video: ["mp4", "webm", "mov", "avi", "mkv", "flv", "wmv", "m4v", "mpeg", "mpg", "3gp", "ogv"],
+    audio: ["mp3", "wav", "ogg", "m4a", "flac", "aac", "wma", "opus", "aiff", "aif", "ape"],
+    document: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt", "ods", "odp", "pages", "numbers", "keynote"],
+    code: ["js", "ts", "jsx", "tsx", "py", "html", "htm", "css", "scss", "less", "json", "xml", "md", "yaml", "yml", "sh", "bash", "bat", "cmd", "ps1", "rb", "go", "rs", "java", "kt", "c", "cpp", "h", "hpp", "cs", "php", "vue", "svelte"],
+    archive: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "z", "tgz", "tbz", "zipx", "iso"]
+  };
+
+  function getFileIconCategory(filename) {
+    var name = (filename || "").toLowerCase();
+    var dot = name.lastIndexOf(".");
+    var ext = dot >= 0 ? name.slice(dot + 1) : "";
+    if (!ext) return "default";
+    var k;
+    for (k in FILE_EXT_CATEGORY) {
+      if (FILE_EXT_CATEGORY[k].indexOf(ext) !== -1) return k;
+    }
+    return "default";
+  }
+
+  function getFileIconSvg(category) {
+    var paths = {
+      image: "M4 4h7V2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7h-2v7H4V4zm7-2v2h5l-5 5V2zm4 3l2 2-6 6-2-2 6-6z",
+      video: "M2 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm4.5 2.5v5l4-2.5-4-2.5z",
+      audio: "M4 4v8h2V6h4V4H4zm8 0v2h2v6h-2v2h4V4h-4zm-6 6h2v4H6v-4z",
+      document: "M4 4a2 2 0 0 1 2-2h4l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4zm6 0V2l4 4h-4z",
+      code: "M2 4h6v2H4v12h12v-4h2v6H2V4zm18-4h-8l4 4-5 5 2 2 5-5 4 4V0z",
+      archive: "M2 4h6v2H4v12h12v-4h2v6H2V4zm4 6h2v2H6v-2zm12-8h-8l2 2 2-2h4v8h2V4z",
+      default: "M4 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4zm2 0v12h8V4H6zm2 2h4v2H8V6zm0 4h4v2H8v-2zm0 4h4v2H8v-2z"
+    };
+    var d = paths[category] || paths.default;
+    return "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"" + d + "\"/></svg>";
+  }
+
+  function renderUploadList(showProgress, progressPercent) {
+    if (!uploadList) return;
+    if (showProgress === true && progressPercent != null) {
+      uploadList.textContent = "";
+      uploadList.classList.remove("upload-list-empty");
+      var wrap = document.createElement("div");
+      wrap.className = "upload-progress-wrap";
+      var bar = document.createElement("div");
+      bar.className = "upload-progress-bar";
+      var fill = document.createElement("div");
+      fill.className = "upload-progress-fill";
+      fill.style.width = (progressPercent >= 0 ? progressPercent : 0) + "%";
+      var text = document.createElement("span");
+      text.className = "upload-progress-text";
+      text.textContent = (progressPercent >= 0 ? Math.round(progressPercent) : 0) + "%";
+      bar.appendChild(fill);
+      wrap.appendChild(bar);
+      wrap.appendChild(text);
+      uploadList.appendChild(wrap);
+      uploadList.setAttribute("data-progress-wrap", "1");
+      return;
+    }
+    uploadList.removeAttribute("data-progress-wrap");
+    uploadList.textContent = "";
+    if (droppedFiles.length === 0) {
+      uploadList.classList.add("upload-list-empty");
+      return;
+    }
+    uploadList.classList.remove("upload-list-empty");
+    for (var i = 0; i < droppedFiles.length; i++) {
+      (function (idx) {
+        var file = droppedFiles[idx];
+        var name = file.name || "未命名";
+        var category = getFileIconCategory(name);
+        var item = document.createElement("span");
+        item.className = "upload-item";
+        var icon = document.createElement("span");
+        icon.className = "upload-item-icon";
+        icon.innerHTML = getFileIconSvg(category);
+        var nameEl = document.createElement("span");
+        nameEl.className = "upload-item-name";
+        nameEl.textContent = name;
+        nameEl.title = name;
+        var removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "upload-item-remove";
+        removeBtn.title = "移除";
+        removeBtn.setAttribute("aria-label", "移除");
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", function () {
+          droppedFiles.splice(idx, 1);
+          renderUploadList();
+        });
+        item.appendChild(icon);
+        item.appendChild(nameEl);
+        item.appendChild(removeBtn);
+        uploadList.appendChild(item);
+      })(i);
+    }
+  }
+
+  function updateUploadProgress(percent) {
+    if (!uploadList || uploadList.getAttribute("data-progress-wrap") !== "1") return;
+    var fill = uploadList.querySelector(".upload-progress-fill");
+    var text = uploadList.querySelector(".upload-progress-text");
+    if (fill) fill.style.width = (percent >= 0 ? percent : 0) + "%";
+    if (text) text.textContent = (percent >= 0 ? Math.round(percent) : 0) + "%";
   }
 
   document.addEventListener("dragover", function (e) {
@@ -119,8 +220,12 @@
     var files = e.dataTransfer.files;
     if (!files || !files.length) return;
     for (var i = 0; i < files.length; i++) droppedFiles.push(files[i]);
-    updateDroppedHint();
+    renderUploadList();
   });
+
+  function syncSendButtonDisabled() {
+    if (sendStopBtn) sendStopBtn.disabled = uploadInProgress;
+  }
 
   function setButtonSend() {
     if (!sendStopBtn) return;
@@ -148,20 +253,50 @@
     return y + "-" + m + "-" + day + " " + h + ":" + min;
   }
 
-  /** 将内容中的 "[执行 Shell] 命令" 行渲染为两个并排气泡（标签气泡 + 命令气泡，过长用 ...）；正文用 .content-body 包裹并加底框，自动化指令不算正文 */
+  /** 将 Markdown 字符串转为安全 HTML（marked + DOMPurify） */
+  function renderMarkdownToHtml(md) {
+    if (md == null || md === "") return "";
+    // #region agent log
+    try {
+      fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "491d35" }, body: JSON.stringify({ sessionId: "491d35", hypothesisId: "H1", location: "chat.js:renderMarkdownToHtml", message: "md_render", data: { hasMarked: typeof marked !== "undefined", hasDOMPurify: typeof DOMPurify !== "undefined", mdLen: (md && md.length) || 0 }, timestamp: Date.now() }) }).catch(function () {});
+    } catch (_e) {}
+    // #endregion
+    try {
+      if (typeof marked !== "undefined" && marked.parse) {
+        var rawHtml = marked.parse(md, { gfm: true, breaks: true });
+        if (typeof DOMPurify !== "undefined" && DOMPurify.sanitize) {
+          rawHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
+        }
+        return rawHtml;
+      }
+    } catch (e) {
+      console.warn("Markdown render failed", e);
+    }
+    return md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /** 将内容中的 "[执行 Shell] 命令" 行渲染为两个并排气泡；"[Shell 输出]" 后内容用 pre 渲染；正文用 .content-body 包裹，按 Markdown 渲染 */
   function renderContentWithShellBubbles(container, content) {
     if (!container || content == null) return;
     var prefix = "[执行 Shell] ";
+    var shellOutputPrefix = "[Shell 输出]";
+    var shellOutputEndMarker = "[Shell 输出结束]";
     container.textContent = "";
     var lines = (content === "" ? [] : content.split("\n"));
-    var currentBody = null;
+    var currentBodyLines = [];
+    function flushBody() {
+      if (currentBodyLines.length === 0) return;
+      var bodyDiv = document.createElement("div");
+      bodyDiv.className = "content-body content-body-markdown";
+      var text = currentBodyLines.join("\n");
+      bodyDiv.innerHTML = renderMarkdownToHtml(text);
+      container.appendChild(bodyDiv);
+      currentBodyLines = [];
+    }
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
       if (line.indexOf(prefix) === 0) {
-        if (currentBody) {
-          container.appendChild(currentBody);
-          currentBody = null;
-        }
+        flushBody();
         var cmd = line.slice(prefix.length);
         var row = document.createElement("span");
         row.className = "shell-bubble-row";
@@ -175,19 +310,37 @@
         row.appendChild(tagBubble);
         row.appendChild(cmdBubble);
         container.appendChild(row);
-      } else {
-        if (!currentBody) {
-          currentBody = document.createElement("div");
-          currentBody.className = "content-body";
+      } else if (line === shellOutputPrefix || line.indexOf(shellOutputPrefix) === 0) {
+        flushBody();
+        var outputLines = [];
+        if (line.length > shellOutputPrefix.length) {
+          outputLines.push(line.slice(shellOutputPrefix.length));
         }
-        currentBody.appendChild(document.createTextNode(line));
-        if (i < lines.length - 1) currentBody.appendChild(document.createTextNode("\n"));
+        i++;
+        while (i < lines.length) {
+          var nextLine = lines[i];
+          if (nextLine === shellOutputEndMarker || nextLine.indexOf(shellOutputEndMarker) === 0) {
+            break;
+          }
+          if (nextLine.indexOf(prefix) === 0 || nextLine === shellOutputPrefix || nextLine.indexOf(shellOutputPrefix) === 0) {
+            i--;
+            break;
+          }
+          outputLines.push(nextLine);
+          i++;
+        }
+        var pre = document.createElement("pre");
+        pre.className = "content-body content-body-shell-output";
+        pre.textContent = outputLines.join("\n");
+        container.appendChild(pre);
+      } else {
+        currentBodyLines.push(line);
       }
     }
-    if (currentBody) container.appendChild(currentBody);
+    flushBody();
   }
 
-  function appendMessage(role, content) {
+  function appendMessage(role, content, files) {
     if (welcomeBlock) welcomeBlock.style.display = "none";
     var row = document.createElement("div");
     row.className = "message-row " + role;
@@ -219,6 +372,28 @@
       header.appendChild(title);
       header.appendChild(timeSpan);
       bubble.appendChild(header);
+      if (files && files.length > 0) {
+        var attWrap = document.createElement("div");
+        attWrap.className = "message-attachments";
+        for (var fi = 0; fi < files.length; fi++) {
+          var path = files[fi];
+          var name = path.split("/").pop() || path;
+          var category = getFileIconCategory(name);
+          var item = document.createElement("span");
+          item.className = "message-attachment-item";
+          item.title = path;
+          var icon = document.createElement("span");
+          icon.className = "message-attachment-icon";
+          icon.innerHTML = getFileIconSvg(category);
+          var nameEl = document.createElement("span");
+          nameEl.className = "message-attachment-name";
+          nameEl.textContent = name;
+          item.appendChild(icon);
+          item.appendChild(nameEl);
+          attWrap.appendChild(item);
+        }
+        bubble.appendChild(attWrap);
+      }
     }
     var text = document.createElement("div");
     text.className = "content";
@@ -240,33 +415,88 @@
     return text;
   }
 
-  async function uploadDroppedFiles() {
-    if (!droppedFiles.length) return [];
-    var fd = new FormData();
-    for (var i = 0; i < droppedFiles.length; i++) fd.append("files", droppedFiles[i]);
-    var resp = await fetch("/api/chat/upload", { method: "POST", body: fd });
-    var data = await resp.json();
-    droppedFiles = [];
-    updateDroppedHint();
-    return data.files || [];
+  function uploadDroppedFiles() {
+    return new Promise(function (resolve, reject) {
+      if (!droppedFiles.length) {
+        resolve([]);
+        return;
+      }
+      var fd = new FormData();
+      for (var i = 0; i < droppedFiles.length; i++) fd.append("files", droppedFiles[i]);
+      renderUploadList(true, 0);
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/chat/upload");
+      xhr.upload.onprogress = function (e) {
+        var pct = e.lengthComputable ? (e.loaded / e.total) * 100 : 0;
+        updateUploadProgress(pct);
+      };
+      xhr.onload = function () {
+        droppedFiles = [];
+        renderUploadList();
+        var data;
+        try {
+          data = JSON.parse(xhr.responseText || "{}");
+        } catch (err) {
+          reject(err);
+          return;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data.files || []);
+        } else {
+          reject(new Error(data.detail || "上传失败"));
+        }
+      };
+      xhr.onerror = function () {
+        renderUploadList();
+        reject(new Error("网络错误"));
+      };
+      xhr.ontimeout = function () {
+        renderUploadList();
+        reject(new Error("请求超时"));
+      };
+      xhr.send(fd);
+    });
   }
 
   if (chatForm) {
     chatForm.addEventListener("submit", async function (e) {
       e.preventDefault();
+      if (uploadInProgress) return;
       var content = (chatInput && chatInput.value) ? chatInput.value.trim() : "";
       if (!content) return;
 
-      appendMessage("user", content);
-      if (chatInput) chatInput.value = "";
+      // #region agent log
+      try {
+        fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "756560" }, body: JSON.stringify({ sessionId: "756560", hypothesisId: "H1", location: "chat.js:submit_entry", message: "submit_entry", data: { contentLen: content.length, droppedFilesCount: droppedFiles.length }, timestamp: Date.now() }) }).catch(function () {});
+      } catch (_x) {}
+      // #endregion
 
       var filePaths = [];
+      uploadInProgress = true;
+      syncSendButtonDisabled();
       try {
+        // #region agent log
+        try {
+          fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "756560" }, body: JSON.stringify({ sessionId: "756560", hypothesisId: "H4", location: "chat.js:before_upload", message: "before_uploadDroppedFiles", data: { droppedFilesCount: droppedFiles.length }, timestamp: Date.now() }) }).catch(function () {});
+        } catch (_x) {}
+        // #endregion
         filePaths = await uploadDroppedFiles();
+        // #region agent log
+        try {
+          fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "756560" }, body: JSON.stringify({ sessionId: "756560", hypothesisId: "H2", location: "chat.js:after_upload", message: "after_uploadDroppedFiles", data: { filePathsCount: filePaths.length, uploadListText: (uploadList && uploadList.textContent) || "" }, timestamp: Date.now() }) }).catch(function () {});
+        } catch (_x) {}
+        // #endregion
       } catch (err) {
         console.error("上传失败", err);
+      } finally {
+        uploadInProgress = false;
+        syncSendButtonDisabled();
+        renderUploadList();
       }
-      if (uploadList) uploadList.textContent = filePaths.length ? "已上传 " + filePaths.length + " 个文件" : "";
+
+      appendMessage("user", content, filePaths);
+      if (chatInput) chatInput.value = "";
+      renderUploadList();
 
       var requestId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : ("r" + Date.now());
       var assistantNode = appendMessage("assistant", "");
@@ -278,23 +508,32 @@
       fd.set("request_id", requestId);
       if (filePaths.length) fd.set("files", filePaths.join(","));
 
+      // #region agent log
+      try {
+        fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "756560" }, body: JSON.stringify({ sessionId: "756560", hypothesisId: "H5", location: "chat.js:before_stream", message: "before_stream_fetch", data: { filePathsCount: filePaths.length, uploadListText: (uploadList && uploadList.textContent) || "" }, timestamp: Date.now() }) }).catch(function () {});
+      } catch (_x) {}
+      // #endregion
+
       var newConversationId = null;
       try {
         var resp = await fetch("/api/chat/stream", { method: "POST", body: fd });
         var reader = resp.body.getReader();
         var decoder = new TextDecoder();
         var buffer = "";
+        var readCount = 0;
         while (true) {
           var result = await reader.read();
           if (result.done) break;
+          readCount += 1;
+          // #region agent log
+          try {
+            fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0f4b4c" }, body: JSON.stringify({ sessionId: "0f4b4c", hypothesisId: "H5", location: "chat.js:reader_read", message: "read_chunk", data: { readCount: readCount, valueLen: result.value ? result.value.length : 0, ts: Date.now() / 1000 }, timestamp: Date.now() }) }).catch(function () {});
+          } catch (_e) {}
+          // #endregion
           buffer += decoder.decode(result.value, { stream: true });
           var parts = buffer.split("\n\n");
           buffer = parts.pop() || "";
-          // #region agent log
-          try {
-            fetch("http://localhost:1863/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "259787" }, body: JSON.stringify({ sessionId: "259787", hypothesisId: "E", location: "chat.js:stream_read", message: "buffer_after_split", data: { partsCount: parts.length, bufferRemainLen: buffer.length }, timestamp: Date.now() }) }).catch(function () {});
-          } catch (_e) {}
-          // #endregion
+          var eventIndex = 0;
           for (var i = 0; i < parts.length; i++) {
             var part = parts[i];
             if (part.indexOf("data:") !== 0) continue;
@@ -310,9 +549,8 @@
             if (typeof text !== "string") text = String(text);
             // #region agent log
             try {
-              var _preview = (raw.substring && raw.substring(0, 120)) || String(raw).slice(0, 120);
-              var _textPreview = (text.substring && text.substring(0, 100)) || String(text).slice(0, 100);
-              fetch("http://localhost:1863/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "259787" }, body: JSON.stringify({ sessionId: "259787", hypothesisId: "B", location: "chat.js:sse_parse", message: "sse_event", data: { rawLen: raw.length, rawPreview: _preview, parseOk: parseOk, usedRaw: !parseOk, textPreview: _textPreview, textLen: text.length }, timestamp: Date.now() }) }).catch(function () {});
+              eventIndex += 1;
+              fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0f4b4c" }, body: JSON.stringify({ sessionId: "0f4b4c", hypothesisId: "H3", location: "chat.js:sse_event", message: "frontend_process_event", data: { eventIndex: eventIndex, textLen: text.length, ts: Date.now() / 1000 }, timestamp: Date.now() }) }).catch(function () {});
             } catch (_e) {}
             // #endregion
             if (text === "[DONE]") break;
@@ -335,6 +573,12 @@
       } catch (err) {
         console.error("流式请求失败", err);
       } finally {
+        renderUploadList();
+        // #region agent log
+        try {
+          fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "756560" }, body: JSON.stringify({ sessionId: "756560", hypothesisId: "H5", location: "chat.js:finally", message: "submit_finally", data: { uploadListText: (uploadList && uploadList.textContent) || "" }, timestamp: Date.now() }) }).catch(function () {});
+        } catch (_x) {}
+        // #endregion
         setButtonSend();
       }
     });
@@ -345,11 +589,11 @@
     chatInput.addEventListener("keydown", function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        var canSend = sendStopBtn.type === "submit" && chatInput.value.trim();
+        var canSend = !uploadInProgress && sendStopBtn.type === "submit" && chatInput.value.trim();
         if (canSend) {
           // 延迟到下一帧触发表单提交，避免在 keydown 内同步 submit 被部分浏览器忽略
           setTimeout(function () {
-            if (sendStopBtn.type === "submit" && chatInput.value.trim()) {
+            if (!uploadInProgress && sendStopBtn.type === "submit" && chatInput.value.trim()) {
               sendStopBtn.click();
             }
           }, 0);
@@ -377,6 +621,8 @@
   var toggleApiKeyBtn = document.getElementById("toggle-api-key");
   var settingsForm = document.getElementById("settings-form");
   var settingsStatus = document.getElementById("settings-status");
+  var enableUtcpCheckbox = document.getElementById("enable-utcp");
+  var enableWebSearchCheckbox = document.getElementById("enable-web-search");
 
   if (toggleApiKeyBtn && apiKeyInput) {
     toggleApiKeyBtn.addEventListener("click", function () {
@@ -394,6 +640,8 @@
           if (data.api_key_set) apiKeyInput.placeholder = "已设置（留空不修改）";
           else apiKeyInput.placeholder = "请输入阿里云百炼平台 API-KEY";
         }
+        if (enableUtcpCheckbox) enableUtcpCheckbox.checked = data.enable_utcp !== false;
+        if (enableWebSearchCheckbox) enableWebSearchCheckbox.checked = data.enable_web_search !== false;
       })
       .catch(function (err) { console.error("加载设置失败", err); });
   }
@@ -402,7 +650,10 @@
     settingsForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       if (!apiKeyInput) return;
-      var body = JSON.stringify({ api_key: apiKeyInput.value });
+      var payload = { api_key: apiKeyInput.value };
+      if (enableUtcpCheckbox) payload.enable_utcp = enableUtcpCheckbox.checked;
+      if (enableWebSearchCheckbox) payload.enable_web_search = enableWebSearchCheckbox.checked;
+      var body = JSON.stringify(payload);
       try {
         var resp = await fetch("/api/settings/me", {
           method: "POST",
@@ -426,4 +677,61 @@
     var raw = el.textContent || "";
     if (raw) renderContentWithShellBubbles(el, raw);
   });
+
+  // #region agent log — 输入行垂直居中调试：记录行/输入框/按钮及下方 upload-list 的布局
+  (function logChatInputLayout() {
+    var row = document.querySelector(".chat-input-row");
+    var input = document.getElementById("chat-input");
+    var btn = document.querySelector(".chat-actions .send-btn");
+    var uploadList = document.getElementById("upload-list");
+    if (!row || !input || !btn) return;
+    var rRect = row.getBoundingClientRect();
+    var iRect = input.getBoundingClientRect();
+    var bRect = btn.getBoundingClientRect();
+    var rStyle = window.getComputedStyle(row);
+    var iStyle = window.getComputedStyle(input);
+    var bStyle = window.getComputedStyle(btn);
+    var rowCenter = rRect.top + rRect.height / 2;
+    var inputCenter = iRect.top + iRect.height / 2;
+    var btnCenter = bRect.top + bRect.height / 2;
+    var ulRect = uploadList ? uploadList.getBoundingClientRect() : null;
+    var ulStyle = uploadList ? window.getComputedStyle(uploadList) : null;
+    var payload = {
+      hypothesisId: "layout",
+      rowHeight: rRect.height,
+      rowPaddingTop: rStyle.paddingTop,
+      rowPaddingBottom: rStyle.paddingBottom,
+      rowAlignItems: rStyle.alignItems,
+      inputHeight: iRect.height,
+      inputMinHeight: iStyle.minHeight,
+      inputPaddingTop: iStyle.paddingTop,
+      inputPaddingBottom: iStyle.paddingBottom,
+      inputLineHeight: iStyle.lineHeight,
+      inputBoxSizing: iStyle.boxSizing,
+      btnHeight: bRect.height,
+      btnPaddingTop: bStyle.paddingTop,
+      btnPaddingBottom: bStyle.paddingBottom,
+      rowCenter: rowCenter,
+      inputCenter: inputCenter,
+      btnCenter: btnCenter,
+      inputOffsetFromRowCenter: inputCenter - rowCenter,
+      btnOffsetFromRowCenter: btnCenter - rowCenter,
+      uploadListHeight: ulRect ? ulRect.height : null,
+      uploadListEmpty: uploadList ? uploadList.childNodes.length === 0 : null,
+      uploadListPaddingTop: ulStyle ? ulStyle.paddingTop : null,
+      uploadListPaddingBottom: ulStyle ? ulStyle.paddingBottom : null,
+    };
+    fetch("http://localhost:5887/ingest/0272949f-4355-40af-b768-4c130c6fda37", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "3c62f9" },
+      body: JSON.stringify({
+        sessionId: "3c62f9",
+        location: "chat.js:logChatInputLayout",
+        message: "chat input row layout",
+        data: payload,
+        timestamp: Date.now(),
+      }),
+    }).catch(function () {});
+  })();
+  // #endregion
 })();

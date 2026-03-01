@@ -59,7 +59,7 @@ python main.py
 
 - **登录页**: 背景图 `images/login.jpg`，左侧 `images/logo.jpg` + 文案 JudgmentDay，右侧登录表单；保留注册与邮箱验证码接口占位。
 - **对话页**: 浅色现代风格、流式输出、支持停止生成并保留已有内容；支持上传文件/图片，存储于 `tmp/`。
-- **设置页**: 每用户可配置自己的 DashScope API Key，持久化在 `data/` 下 JSON 中。
+- **设置页**: 每用户可配置自己的 DashScope API Key，以及是否启用 **UTCP 服务（Shell 工具调用）** 与 **联网搜索**，二者默认开启；持久化在 `data/` 下 JSON 中。联网搜索受阿里云限流与计费约束，详见百炼文档。
 - **控制台**: `DEBUG_MODE=True` 时，后端在终端输出尽可能多的调试信息。
 - **AI 模型**: 仅使用阿里百炼 qwen3-max 多模态接口（DashScope），采用 UTCP 协议做工具调用，不支持 MCP；预留自动化任务与 Shell 工具扩展。
 

@@ -2,7 +2,9 @@
   "settings": [
     {
       "user_id": "6cf10d52-c1d3-4e7e-8127-e0c514c9ed56",
-      "api_key": "123"
+      "api_key": "123",
+      "enable_utcp": true,
+      "enable_web_search": true
     }
   ]
 }

@@ -465,6 +465,75 @@ body.left-column-collapsed .expand-sidebar-btn {
   margin-bottom: 0;
 }
 
+/* Markdown 渲染区域：标题、列表、加粗、代码等 */
+.bubble .content-body-markdown {
+  word-wrap: break-word;
+}
+.bubble .content-body-markdown h1,
+.bubble .content-body-markdown h2,
+.bubble .content-body-markdown h3,
+.bubble .content-body-markdown h4,
+.bubble .content-body-markdown h5,
+.bubble .content-body-markdown h6 {
+  margin: 0.6em 0 0.4em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.bubble .content-body-markdown h1 { font-size: 1.35em; }
+.bubble .content-body-markdown h2 { font-size: 1.2em; }
+.bubble .content-body-markdown h3 { font-size: 1.1em; }
+.bubble .content-body-markdown p { margin: 0.5em 0; }
+.bubble .content-body-markdown ul,
+.bubble .content-body-markdown ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.bubble .content-body-markdown li { margin: 0.2em 0; }
+.bubble .content-body-markdown strong { font-weight: 600; }
+.bubble .content-body-markdown code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+.bubble .content-body-markdown pre {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.bubble .content-body-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.bubble .content-body-markdown blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+  color: #374151;
+}
+.bubble .content-body-markdown a {
+  color: #4f46e5;
+  text-decoration: none;
+}
+.bubble .content-body-markdown a:hover {
+  text-decoration: underline;
+}
+
+/* Shell 输出块：等宽、保留换行、基本底框 */
+.bubble .content-body-shell-output {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
 /* [执行 Shell] 与命令拆成两个并排气泡，不换行；命令过长显示 ... */
 .shell-bubble-row {
   display: inline-flex;
@@ -586,7 +655,7 @@ body.left-column-collapsed .expand-sidebar-btn {
 
 .chat-input-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   padding: 10px 12px 10px 16px;
 }
@@ -595,7 +664,8 @@ body.left-column-collapsed .expand-sidebar-btn {
   flex: 1;
   min-height: 44px;
   max-height: 160px;
-  padding: 10px 0;
+  /* 使单行文字在 44px 内垂直居中：content 区 = 44 - 2*padding，line-height 1.5em，居中需 padding = (44px - 1.5em)/2 */
+  padding: calc((44px - 1.5em) / 2) 0;
   border: none;
   background: transparent;
   font-size: 14px;
@@ -638,18 +708,146 @@ body.left-column-collapsed .expand-sidebar-btn {
   opacity: 0.8;
 }
 
-/* 输入栏下方预留扩展区（在线搜索等，暂不展示按钮） */
-.chat-input-extra {
-  min-height: 0;
-  padding: 4px 12px 8px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
 .upload-list {
   padding: 4px 16px 8px;
   font-size: 12px;
   color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 无上传内容时不占高度，去掉下方留白 */
+.upload-list:empty,
+.upload-list.upload-list-empty {
+  display: none;
+}
+
+.upload-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.upload-item-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-item-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.upload-item-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-item-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.upload-item-remove:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+/* 消息气泡内的附件列表（历史与刚发送的带附件消息） */
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.message-attachment-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.message-attachment-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-attachment-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.message-attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 上传进度：在 .upload-list 内显示 */
+.upload-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.upload-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
+.upload-progress-text {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #6b7280;
+  min-width: 3em;
 }
 
 /* ---------- 设置页 ---------- */
@@ -671,6 +869,30 @@ body.left-column-collapsed .expand-sidebar-btn {
 
 .settings-panel .field {
   margin-bottom: 20px;
+}
+
+.settings-panel .field-group-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.settings-panel .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.settings-panel .checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 
 .settings-panel label {

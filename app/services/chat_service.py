@@ -111,10 +111,9 @@ def stream_model_reply(
         content=user_content,
         files=files or [],
     )
-    append_message(user_msg)
-
     history = list_messages(conversation.id)
-    settings = get_settings()
+    append_message(user_msg)
+    enable_utcp, enable_web_search = _get_user_feature_flags(user.id)
 
     full_reply: List[str] = []
     try:
@@ -124,6 +123,8 @@ def stream_model_reply(
             api_key_override=_get_user_api_key(user),
             request_id=request_id,
             interrupt_flags=_interrupt_flags,
+            enable_utcp=enable_utcp,
+            enable_web_search=enable_web_search,
         ):
             if _interrupt_flags.get(request_id):
                 logger.info("Interrupted model streaming, request_id=%s", request_id)
@@ -155,4 +156,17 @@ def _get_user_api_key(user: User) -> Optional[str]:
         return user.api_key
     settings = get_settings()
     return settings.dashscope_api_key
+
+
+def _get_user_feature_flags(user_id: str) -> tuple[bool, bool]:
+    """从用户设置中读取 enable_utcp、enable_web_search，缺省为 True。"""
+    for item in json_store.load_settings():
+        if item.get("user_id") == user_id:
+            enable_utcp = item.get("enable_utcp")
+            enable_web_search = item.get("enable_web_search")
+            return (
+                enable_utcp if isinstance(enable_utcp, bool) else True,
+                enable_web_search if isinstance(enable_web_search, bool) else True,
+            )
+    return True, True
 

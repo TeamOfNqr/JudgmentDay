@@ -72,6 +72,13 @@
                         <span class="message-time">{{ m.created_at.strftime('%Y-%m-%d %H:%M') if m.created_at else '' }}</span>
                       </div>
                       {% endif %}
+                      {% if m.files and m.files|length > 0 %}
+                      <div class="message-attachments">
+                        {% for f in m.files %}
+                        <span class="message-attachment-item" title="{{ f }}">{{ f.split('/')[-1] }}</span>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
                       <div class="content"><div class="content-body">{{ m.content }}</div></div>
                     </div>
                   </div>
@@ -88,8 +95,6 @@
                       </div>
                     </div>
                     <div id="upload-list" class="upload-list"></div>
-                    <!-- 预留：在线搜索等扩展功能入口，后续可在此添加按钮 -->
-                    <div class="chat-input-extra" id="chat-input-extra"></div>
                   </form>
                 </div>
               </div>
@@ -107,6 +112,19 @@
                     </div>
                     <p class="hint">仅保存在本机，不会上传。用于调用千问模型。</p>
                   </div>
+                  <div class="field">
+                    <h3 class="field-group-title">功能开关</h3>
+                    <label class="checkbox-row">
+                      <input type="checkbox" id="enable-utcp" checked />
+                      <span>UTCP 服务（Shell 工具调用）</span>
+                    </label>
+                    <p class="hint">启用后，模型可调用 Shell 执行命令；关闭后仅文本对话。</p>
+                    <label class="checkbox-row">
+                      <input type="checkbox" id="enable-web-search" checked />
+                      <span>联网搜索</span>
+                    </label>
+                    <p class="hint">启用后，模型可结合实时网络信息回答；关闭则不联网。</p>
+                  </div>
                   <button type="submit" class="primary-btn">保存设置</button>
                   <div id="settings-status" class="status-text"></div>
                 </form>
@@ -119,6 +137,8 @@
         </div>
       </div>
     </div>
+    <script src="/static/js/marked.min.js"></script>
+    <script src="/static/js/purify.min.js"></script>
     <script src="/static/js/chat.js"></script>
   </body>
 </html>
